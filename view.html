@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <title>Chess</title>
+    <link rel="stylesheet" href="css/chessboard-1.0.0.min.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js">
+    </script>
+    <script src="stockfish.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="js/chessboard-1.0.0.min.js">
+    </script>
+    <script src="https://github.com/jhlywa/chess.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    </script>
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <style>
+        .hide {
+            display: none;
+        }
+
+        .left-pane {
+            height: 100%;
+            width: 70%;
+            //position: fixed; 
+            top: 0;
+            overflow-x: hidden;
+            padding-top: 20px;
+            left: 0;
+        }
+
+        .right-pane {
+            height: 100%;
+            width: 30%;
+            position: fixed;
+            top: 0;
+            overflow-x: hidden;
+            padding-top: 20px;
+            right: 0;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button id="loadPgnBtn" data-launch-view="load-pgn">Load
+        PGN</button> <button id="practiceOpeningBtn" data-launch-view="practice-opening">Practice Opening</button> <button id="recordOpeningBtn" data-launch-view="record-opening">Record
+        Opening</button> <button id="recordGameBtn" data-launch-view="record-game">Record Game</button><button id="puzzleBtn" data-launch-view="end-puzzles">Puzzles</button><button id="linkBtn" data-launch-view="openings-link">Openings@chess.com</button><button id="analyseGameBtn" data-launch-view="game-analysis">Game Analysis</button>
+
+
+
+
+
+    <div id="pages">
+
+        <div class="view" id="load-pgn">
+            <h2>Load PGN</h2>
+            <form id="load-file" action="javascript:loadFile()" name="load-file">
+                <h3 id="load-label">Select PGN to load:</h3>
+                <label for="pgn-file">Select a file:</label> <input type="file" id="pgn-file" name="pgn-file" accept=".pgn">
+                <br>
+                <input type="submit">
+            </form>
+        </div>
+
+        <div class="view hide" id="practice-opening">
+            <div class="left-pane">
+                <h2>Practice Opening</h2>
+                <h3 id="openings-label">Select an opening to play:</h3>
+                <select id="openings" onchange="javascript:startGame()">
+                    <option selected value="0">Please Select</option>
+                </select> <button id="start" hidden="hidden" onclick="javascript:loadGame()">START</button> <button id="hint" hidden="hidden" onclick="javascript:hint()">HINT</button> <button id="reset" hidden="hidden" onclick="javascript:reset()">RESET</button><br>
+                <br>
+                <label>Status:</label> <label id="status-practice-opening" class="status"></label><br>
+                <br>
+                <div id="practice-board" class="board" label-order="practice-opening" style="width: 60%"></div>
+                <label id="timer" style="float:right;"></label>
+                <br>
+                <br>
+                <p id="p01"></p>
+            </div>
+            <div class="right-pane"><label>PGN:</label>
+                <textarea id="pgn-display-practice-opening" class="pgn-display" rows="4" cols="50"></textarea>
+            </div>
+        </div>
+
+        <div class="view hide" id="record-opening">
+            <div class="left-pane">
+                <h2>Record Opening</h2>
+                <div id="record-opening-board" class="board" label-order="record-opening" style="width: 60%"></div>
+                <br>
+                <br>
+                <button id="save1" onclick="javascript:saveOpening()">SAVE</button>
+                <button id="flip1" onclick="javascript:flip()">FLIP</button> <button id="reset1" onclick="javascript:reset()">RESET</button> <button id="undo1" onclick="javascript:undo()">UNDO</button>
+            </div>
+            <div class="right-pane"><label>PGN:</label>
+                <textarea id="pgn-display-record-opening" class="pgn-display" rows="4" cols="50"></textarea>
+            </div>
+        </div>
+
+        <div class="view hide" id="record-game">
+            <div class="left-pane">
+                <h2>Record Game</h2>
+                <label>Status:</label> <label id="status-record-game" class="status"></label><br>
+                <br>
+                <div id="game-details-1" style="width:60%"><label id="player1"></label> <label id="timer-1-w" style="float:right;"></label> <label id="timer-1-b" style="float:right;"></label></div>
+                <div id="record-game-board" class="board" label-order="record-game" style="width: 60%"></div>
+                <div id="game-details-2" style="width:60%"><label id="player2"></label> <label id="timer-2-w" style="float:right;"></label> <label id="timer-2-b" style="float:right;"></label></div>
+                <br>
+                <br>
+                <button id="save2" onclick="javascript:saveGame()">SAVE</button>
+                <button id="flip2" onclick="javascript:flip()">FLIP</button>
+                <button id="reset2" onclick="javascript:reset()">RESET</button>
+                <button id="undo2" onclick="javascript:undo()">UNDO</button>
+            </div>
+            <div class="right-pane"><label>PGN:</label>
+                <textarea id="pgn-display-record-game" class="pgn-display" rows="4" cols="50"></textarea>
+            </div>
+        </div>
+
+
+        <div class="view hide" id="end-puzzles">
+            <div class="left-pane">
+                <h2>End Puzzle</h2>
+                <br>
+                <label id="puzzle-num"></label>
+                <div id="end-puzzle-board" class="board" label-order="end-puzzles" style="width: 60%"></div>
+                <br>
+                <br>
+                <button id="save1" onclick="javascript:saveOpening()">SAVE</button>
+                <button id="flip1" onclick="javascript:flip()">FLIP</button> <button id="reset1" onclick="javascript:reset()">RESET</button> <button id="undo1" onclick="javascript:undo()">UNDO</button>
+            </div>
+            <div class="right-pane"><label>Result:</label>
+                <textarea id="result" rows="4" cols="50"></textarea>
+                <p>Please select your white answer:</p>
+                <input type="radio" id="winW" name="answersW" value="White wins">
+                <label for="win">White wins</label><br>
+                <input type="radio" id="loseW" name="answersW" value="Black wins">
+                <label for="lose">Black wins</label><br>
+                <input type="radio" id="drawW" name="answersW" value="Draw">
+                <label for="javascript">Draw</label>
+                <br>
+                <p>Please select your black answer:</p>
+                <input type="radio" id="winB" name="answersB" value="Black wins">
+                <label for="win">Black wins</label><br>
+                <input type="radio" id="loseB" name="answersB" value="White wins">
+                <label for="lose">White Wins</label><br>
+                <input type="radio" id="drawB" name="answersB" value="Draw">
+                <label for="javascript">Draw</label>
+                <br><br>
+
+                <input type="submit" value="Submit" onclick="javascript:checkAnswer()">
+            </div>
+        </div>
+
+
+        <div class="view hide" id="openings-link">
+            <h2>Openings</h2>
+            <table id="openings-table">
+                <tr>
+                    <th border=1> Openings</th>
+                    <th> Links </th>
+                    <th> Audio </th>
+                    <th> Practice </th>
+                </tr>
+            </table>
+
+        </div>
+
+
+        <div class="view hide" id="game-analysis">
+            <div class="left-pane">
+                <h2>Game Analysis</h2>
+                <form id="load-game" action="javascript:loadGameAnalysis()" name="load-file">
+                    <label for="pgn-file">Select a file:</label> <input type="file" id="game-file" name="pgn-file" accept=".pgn">
+                    <br>
+                    <input type="submit">
+                </form>
+                <br><br>
+                <div id="game-analysis-board" class="board" label-order="game-analysis" style="width: 60%"></div>
+            </div>
+            <div id="game-analysis-pane" class="right-pane hide">
+                <br><br><br>
+                <label>PGN:</label>
+                <textarea id="game-pgn" rows="4" cols="50"></textarea>
+                <button id="prev" onclick="onPrev()">Prev</button>
+                <button id="next" onclick="onNext()">Next</button>
+                <button id="play" onclick="onPlay()">Play</button>
+                <br><br><br>
+                <table id="score-table">
+                    <tr>
+                        <th border=1> Turn </th>
+                        <th colspan="3"> Moves </th>
+                        <th colspan="3"> Score </th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th> Server</th>
+                        <th> User </th>
+                        <th> GMstr </th>
+                        <th id="engineStatus"> Server</th>
+                        <th id="user-eval"> User </th>
+                        <th id="gm-eval"> GMstr </th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="chess.js"></script>
+    <script src="engine.js"></script>
+</body>
+
+</html>
